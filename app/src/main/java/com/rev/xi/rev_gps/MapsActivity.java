@@ -4,6 +4,7 @@ import android.location.Location;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
+import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
@@ -16,6 +17,7 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
 import android.util.Log;
+import android.widget.Toast;
 
 public class MapsActivity extends FragmentActivity implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener {
 
@@ -24,6 +26,7 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
     private Double longtitude;
     private Double lat;
     LocationRequest mLocationRequest;
+    private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 1000;
 
     @Override
     public void onConnectionSuspended(int i) {
@@ -42,18 +45,21 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         setUpMapIfNeeded();
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
-        mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(3000);
-        mLocationRequest.setFastestInterval(1000);
-        mLocationRequest.setSmallestDisplacement(10);
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        LocationServices.FusedLocationApi.requestLocationUpdates(
-                mGoogleApiClient, mLocationRequest, this);
+        if(checkPlayServices()){
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                        .addConnectionCallbacks(this)
+                        .addOnConnectionFailedListener(this)
+                        .addApi(LocationServices.API)
+                        .build();
+            mLocationRequest = new LocationRequest();
+            mLocationRequest.setInterval(3000);
+            mLocationRequest.setFastestInterval(1000);
+            mLocationRequest.setSmallestDisplacement(10);
+            mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+            LocationServices.FusedLocationApi.requestLocationUpdates(
+                        mGoogleApiClient, mLocationRequest, this);
+
+        }
     }
 
     @Override
@@ -119,5 +125,23 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
         longtitude = mLastLocation.getLongitude();
         lat = mLastLocation.getLatitude();
         Log.v(TAG, "current location: "+ longtitude +" "+ lat );
+    }
+
+    private boolean checkPlayServices() {
+        int resultCode = GooglePlayServicesUtil
+                .isGooglePlayServicesAvailable(this);
+        if (resultCode != ConnectionResult.SUCCESS) {
+            if (GooglePlayServicesUtil.isUserRecoverableError(resultCode)) {
+                GooglePlayServicesUtil.getErrorDialog(resultCode, this,
+                        PLAY_SERVICES_RESOLUTION_REQUEST).show();
+            } else {
+                Toast.makeText(getApplicationContext(),
+                        "This device is not supported.", Toast.LENGTH_LONG)
+                        .show();
+                finish();
+            }
+            return false;
+        }
+        return true;
     }
 }
