@@ -56,11 +56,26 @@
         android:layout_weight="1.0"
         android:orientation="vertical" >
 
-        <ListView
+        <TextView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/list">
-        </ListView>
+            android:layout_height="wrap_content"
+            android:id="@+id/latitude"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/longitude"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/time"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/speed"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/accuracy"/>
     </LinearLayout>
 
 </LinearLayout>

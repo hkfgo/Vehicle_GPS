@@ -17,14 +17,18 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
 import android.util.Log;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import java.text.DateFormat;
+import java.util.Date;
 
 public class MapsActivity extends FragmentActivity implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener {
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
     private String TAG = "MapActivity";
-    private Double longtitude;
-    private Double lat;
+    private Double longitude;
+    private Double latitude;
     LocationRequest mLocationRequest;
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 1000;
 
@@ -78,11 +82,11 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
                 mGoogleApiClient, mLocationRequest, this);
         mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
                 mGoogleApiClient);
-        if (mLastLocation != null) {
-            longtitude = mLastLocation.getLongitude();
-            lat = mLastLocation.getLatitude();
-            Log.e(TAG, "current location: " + longtitude + " " + lat );
-        }
+//        if (mLastLocation != null) {
+//            longtitude = mLastLocation.getLongitude();
+//            lat = mLastLocation.getLatitude();
+//            Log.e(TAG, "current location: " + longtitude + " " + lat );
+//        }
     }
 
     @Override
@@ -134,9 +138,15 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
     @Override
     public void onLocationChanged(Location location) {
         mLastLocation = location;
-        longtitude = mLastLocation.getLongitude();
-        lat = mLastLocation.getLatitude();
-        Log.v(TAG, "current location: " + longtitude + " " + lat);
+        longitude = mLastLocation.getLongitude();
+        latitude = mLastLocation.getLatitude();
+        String time = DateFormat.getTimeInstance().format(new Date());
+        Log.e(TAG, "current location: " + longitude + " " + latitude + " at " + time);
+        ((TextView) findViewById(R.id.latitude)).setText("latitude: " + latitude.toString());
+        ((TextView) findViewById(R.id.longitude)).setText("longitude: " + longitude.toString());
+        ((TextView) findViewById(R.id.time)).setText("time: " + time);
+        ((TextView) findViewById(R.id.speed)).setText("speed: " + mLastLocation.getSpeed());
+        ((TextView) findViewById(R.id.accuracy)).setText("accuracy: " + mLastLocation.getAccuracy());
     }
 
     private boolean checkPlayServices() {
