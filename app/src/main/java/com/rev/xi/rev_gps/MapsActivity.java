@@ -40,6 +40,7 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
 
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -56,20 +57,31 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
             mLocationRequest.setFastestInterval(1000);
             mLocationRequest.setSmallestDisplacement(10);
             mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-            LocationServices.FusedLocationApi.requestLocationUpdates(
-                        mGoogleApiClient, mLocationRequest, this);
-
         }
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mGoogleApiClient.disconnect();
+    }
+
+    @Override
     public void onConnected(Bundle connectionHint) {
+        LocationServices.FusedLocationApi.requestLocationUpdates(
+                mGoogleApiClient, mLocationRequest, this);
         mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
                 mGoogleApiClient);
         if (mLastLocation != null) {
             longtitude = mLastLocation.getLongitude();
             lat = mLastLocation.getLatitude();
-            Log.v(TAG, "current location: "+ longtitude +" "+ lat );
+            Log.e(TAG, "current location: " + longtitude + " " + lat );
         }
     }
 
@@ -124,7 +136,7 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
         mLastLocation = location;
         longtitude = mLastLocation.getLongitude();
         lat = mLastLocation.getLatitude();
-        Log.v(TAG, "current location: "+ longtitude +" "+ lat );
+        Log.v(TAG, "current location: " + longtitude + " " + lat);
     }
 
     private boolean checkPlayServices() {
