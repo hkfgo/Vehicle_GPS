@@ -57,9 +57,8 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
                         .addApi(LocationServices.API)
                         .build();
             mLocationRequest = new LocationRequest();
-            mLocationRequest.setInterval(3000);
+            mLocationRequest.setInterval(5000);
             mLocationRequest.setFastestInterval(1000);
-            mLocationRequest.setSmallestDisplacement(10);
             mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         }
     }
@@ -82,11 +81,19 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
                 mGoogleApiClient, mLocationRequest, this);
         mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
                 mGoogleApiClient);
-//        if (mLastLocation != null) {
-//            longtitude = mLastLocation.getLongitude();
-//            lat = mLastLocation.getLatitude();
-//            Log.e(TAG, "current location: " + longtitude + " " + lat );
-//        }
+        updateFields();
+    }
+
+    private void updateFields() {
+        longitude = mLastLocation.getLongitude();
+        latitude = mLastLocation.getLatitude();
+        String time = DateFormat.getTimeInstance().format(new Date());
+        Log.e(TAG, "current location: " + longitude + " " + latitude + " at " + time);
+        ((TextView) findViewById(R.id.latitude)).setText("latitude: " + latitude.toString());
+        ((TextView) findViewById(R.id.longitude)).setText("longitude: " + longitude.toString());
+        ((TextView) findViewById(R.id.time)).setText("time: " + time);
+        ((TextView) findViewById(R.id.speed)).setText("speed: " + mLastLocation.getSpeed());
+        ((TextView) findViewById(R.id.accuracy)).setText("accuracy: " + mLastLocation.getAccuracy());
     }
 
     @Override
@@ -138,15 +145,7 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
     @Override
     public void onLocationChanged(Location location) {
         mLastLocation = location;
-        longitude = mLastLocation.getLongitude();
-        latitude = mLastLocation.getLatitude();
-        String time = DateFormat.getTimeInstance().format(new Date());
-        Log.e(TAG, "current location: " + longitude + " " + latitude + " at " + time);
-        ((TextView) findViewById(R.id.latitude)).setText("latitude: " + latitude.toString());
-        ((TextView) findViewById(R.id.longitude)).setText("longitude: " + longitude.toString());
-        ((TextView) findViewById(R.id.time)).setText("time: " + time);
-        ((TextView) findViewById(R.id.speed)).setText("speed: " + mLastLocation.getSpeed());
-        ((TextView) findViewById(R.id.accuracy)).setText("accuracy: " + mLastLocation.getAccuracy());
+        updateFields();
     }
 
     private boolean checkPlayServices() {
