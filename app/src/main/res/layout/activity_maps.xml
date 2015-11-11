@@ -76,6 +76,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/accuracy"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/arduino_input"/>
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/bluetooth_connect"
+            android:text="@string/connect_bluetooth"/>
     </LinearLayout>
 
 </LinearLayout>
