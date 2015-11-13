@@ -66,17 +66,17 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         setUpMapIfNeeded();
-        if(checkPlayServices()){
-            mGoogleApiClient = new GoogleApiClient.Builder(this)
-                        .addConnectionCallbacks(this)
-                        .addOnConnectionFailedListener(this)
-                        .addApi(LocationServices.API)
-                        .build();
-            mLocationRequest = new LocationRequest();
-            mLocationRequest.setInterval(5000);
-            mLocationRequest.setFastestInterval(1000);
-            mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        }
+//        if(checkPlayServices()){
+//            mGoogleApiClient = new GoogleApiClient.Builder(this)
+//                        .addConnectionCallbacks(this)
+//                        .addOnConnectionFailedListener(this)
+//                        .addApi(LocationServices.API)
+//                        .build();
+//            mLocationRequest = new LocationRequest();
+//            mLocationRequest.setInterval(5000);
+//            mLocationRequest.setFastestInterval(1000);
+//            mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+//        }
         Button connectBluetoothButton = (Button) findViewById(R.id.bluetooth_connect);
         connectBluetoothButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -89,13 +89,13 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
     @Override
     protected void onStart() {
         super.onStart();
-        mGoogleApiClient.connect();
+        //mGoogleApiClient.connect();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        mGoogleApiClient.disconnect();
+        //mGoogleApiClient.disconnect();
     }
 
     @Override
@@ -111,7 +111,7 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
         longitude = mLastLocation.getLongitude();
         latitude = mLastLocation.getLatitude();
         String time = DateFormat.getTimeInstance().format(new Date());
-        Log.e(TAG, "current location: " + longitude + " " + latitude + " at " + time);
+        Log.d(TAG, "current location: " + longitude + " " + latitude + " at " + time);
         ((TextView) findViewById(R.id.latitude)).setText("latitude: " + latitude.toString());
         ((TextView) findViewById(R.id.longitude)).setText("longitude: " + longitude.toString());
         ((TextView) findViewById(R.id.time)).setText("time: " + time);
@@ -197,7 +197,8 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
         BluetoothDevice pairedDevice = null;
         if(pairedDevices.size() > 0) {
             for(BluetoothDevice device : pairedDevices) {
-                if(device.getName().equals("NAME OF BLUETOOTH DEVICE HERE")) { //TODO: input arduino name
+                Log.d("device name", device.getName());
+                if(device.getName().equals("HC-06")) { //NAME OF BLUETOOTH DEVICE HERE
                     pairedDevice = device;
                     break;
                 }
@@ -207,6 +208,7 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
             ((TextView) findViewById(R.id.arduino_input)).setText("failed to find paired device");
             return;
         }
+        ((TextView) findViewById(R.id.arduino_input)).setText("found paired device");
         UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb"); //Standard SerialPortService ID
         try {
             BluetoothSocket socket = pairedDevice.createRfcommSocketToServiceRecord(uuid);
@@ -220,6 +222,7 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
     }
 
     private void listenForData() {
+        System.out.println("listening");
         final Handler handler = new Handler();
         Thread workerThread = new Thread(new Runnable() {
             public void run() {
@@ -235,6 +238,7 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
 
                             for(int i = 0; i < bytesAvailable; i++) {
                                 byte b = packetBytes[i];
+                                System.out.println(b);
                                 if(b == '\n') {  // delimiter character to be sent at the end of every arduino command
                                     byte[] encodedBytes = new byte[readBufferPosition];
                                     System.arraycopy(readBuffer, 0, encodedBytes, 0, encodedBytes.length);
