@@ -30,6 +30,8 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.Set;
@@ -47,7 +49,8 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
     private OutputStream bluetoothOutput;
     private InputStream bluetoothInput;
     private boolean stopWorker = false;
-
+    private final int BT_REQUEST = 0;
+    private BluetoothAdapter adapter;
     @Override
     public void onConnectionSuspended(int i) {
 
@@ -64,8 +67,10 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d("MapsActivity", "started app");
         setContentView(R.layout.activity_maps);
         setUpMapIfNeeded();
+        Log.d("MapsActivity", "started app");
 //        if(checkPlayServices()){
 //            mGoogleApiClient = new GoogleApiClient.Builder(this)
 //                        .addConnectionCallbacks(this)
@@ -81,9 +86,12 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
         connectBluetoothButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Log.d("MapsActivity", "start bluetooth connection");
                 connectArduinoBluetooth();
             }
         });
+
+
     }
 
     @Override
@@ -119,6 +127,62 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
         ((TextView) findViewById(R.id.accuracy)).setText("accuracy: " + mLastLocation.getAccuracy() + " m");
     }
 
+    private void establishFallbackConnection(BluetoothDevice device, BluetoothSocket socket) {
+        BluetoothSocket fallbackSocket = null;
+        Log.d("MapsActivity", "start fallback connection");
+        try {
+            Class<?> clazz = socket.getRemoteDevice().getClass();
+            Class<?>[] paramTypes = new Class<?>[] {Integer.TYPE};
+            Method m = clazz.getMethod("createRfcommSocket", paramTypes);
+            Object[] params = new Object[] {Integer.valueOf(1)};
+            fallbackSocket = (BluetoothSocket) m.invoke(socket.getRemoteDevice(), params);
+            //fallbackSocket = (BluetoothSocket) device.getClass().getMethod("createRfcommSocket", new Class[] {int.class}).invoke(device,1);
+            fallbackSocket.connect();
+        } catch (IllegalAccessException e) {
+            Log.d("MapsActivity", "fallback connection failed: "+ e);
+        } catch (InvocationTargetException e) {
+            Log.d("MapsActivity", "fallback connection failed: "+ e);
+        } catch (NoSuchMethodException e) {
+            Log.d("MapsActivity", "fallback connection failed: "+ e);
+        }
+       catch (IOException e) {
+            Log.d("MapsActivity", "fallback connection failed: "+ e);
+        }
+
+    }
+
+    private void connectToDevice(){
+        Set<BluetoothDevice> pairedDevices = adapter.getBondedDevices();
+        BluetoothDevice pairedDevice = null;
+        if(pairedDevices.size() > 0) {
+            for(BluetoothDevice device : pairedDevices) {
+                Log.d("device name", device.getName());
+                if(device.getName().equals("HC-06")) { //NAME OF BLUETOOTH DEVICE HERE
+                    pairedDevice = device;
+                    break;
+                }
+            }
+        }
+        if (pairedDevice == null) {
+            ((TextView) findViewById(R.id.arduino_input)).setText("failed to find paired device");
+            return;
+        }
+        ((TextView) findViewById(R.id.arduino_input)).setText("found paired device");
+        UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb"); //Standard SerialPortService ID
+        BluetoothSocket socket = null;
+        try {
+            socket = pairedDevice.createRfcommSocketToServiceRecord(uuid);
+            socket.connect();
+            bluetoothOutput = socket.getOutputStream();
+            bluetoothInput = socket.getInputStream();
+            listenForData();
+        } catch (IOException e) {
+            Log.d("MapsActivity", "IO Error: "+e);
+            establishFallbackConnection(pairedDevice, socket);
+        }
+
+
+    }
     @Override
     protected void onResume() {
         super.onResume();
@@ -188,41 +252,32 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
     }
 
     private void connectArduinoBluetooth() {
-        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        adapter = BluetoothAdapter.getDefaultAdapter();
         if(!adapter.isEnabled()) {
             Intent enableBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBluetooth, 0);
+            startActivityForResult(enableBluetooth, BT_REQUEST);
         }
-        Set<BluetoothDevice> pairedDevices = adapter.getBondedDevices();
-        BluetoothDevice pairedDevice = null;
-        if(pairedDevices.size() > 0) {
-            for(BluetoothDevice device : pairedDevices) {
-                Log.d("device name", device.getName());
-                if(device.getName().equals("HC-06")) { //NAME OF BLUETOOTH DEVICE HERE
-                    pairedDevice = device;
-                    break;
-                }
+        else{
+            Log.d("MapsActivity", "adapter is enabled");
+            connectToDevice();
+        }
+
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // Check which request we're responding to
+        Log.d("MapsActivity", "result received" );
+        if (requestCode == BT_REQUEST) {
+            // Make sure the request was successful
+            if (resultCode == RESULT_OK) {
+                connectToDevice();
             }
-        }
-        if (pairedDevice == null) {
-            ((TextView) findViewById(R.id.arduino_input)).setText("failed to find paired device");
-            return;
-        }
-        ((TextView) findViewById(R.id.arduino_input)).setText("found paired device");
-        UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb"); //Standard SerialPortService ID
-        try {
-            BluetoothSocket socket = pairedDevice.createRfcommSocketToServiceRecord(uuid);
-            socket.connect();
-            bluetoothOutput = socket.getOutputStream();
-            bluetoothInput = socket.getInputStream();
-            listenForData();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
     private void listenForData() {
-        System.out.println("listening");
+        Log.d("MapsActivity", "listening");
         final Handler handler = new Handler();
         Thread workerThread = new Thread(new Runnable() {
             public void run() {
@@ -243,6 +298,7 @@ public class MapsActivity extends FragmentActivity implements ConnectionCallback
                                     byte[] encodedBytes = new byte[readBufferPosition];
                                     System.arraycopy(readBuffer, 0, encodedBytes, 0, encodedBytes.length);
                                     final String data = new String(encodedBytes, "US-ASCII");
+                                    Log.d("MapsActivity", "received data: "+ data);
                                     readBufferPosition = 0;
                                     // The variable data now contains our full command
                                     // handler used to display data back on UI thread
